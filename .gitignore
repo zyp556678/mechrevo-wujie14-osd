@@ -12,6 +12,9 @@ extracted_osd_png/
 __pycache__/
 *.py[cod]
 
+# Compiled GSettings schema — install.sh runs glib-compile-schemas
+gschemas.compiled
+
 # Editor / OS noise
 *.swp
 *~

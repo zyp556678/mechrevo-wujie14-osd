@@ -40,10 +40,14 @@ echo "installed daemon -> $LIBEXEC"
 # --- icons + extension ----------------------------------------------------
 EXT_DST="$TARGET_HOME/.local/share/gnome-shell/extensions/mifs-osd@local"
 install -d -m 0755 "$EXT_DST/icons"
+install -d -m 0755 "$EXT_DST/schemas"
 install -m 0644 "$REPO/src/extension/mifs-osd@local/metadata.json" "$EXT_DST/"
 install -m 0644 "$REPO/src/extension/mifs-osd@local/extension.js" "$EXT_DST/"
+install -m 0644 "$REPO/src/extension/mifs-osd@local/prefs.js" "$EXT_DST/"
 install -m 0644 "$REPO/src/extension/mifs-osd@local/icons/"*.png "$EXT_DST/icons/"
-chown -R "$TARGET_USER":"$TARGET_USER" "$TARGET_HOME/.local/share/gnome-shell/extensions/mifs-osd@local"
+install -m 0644 "$REPO/src/extension/mifs-osd@local/schemas/"*.xml "$EXT_DST/schemas/"
+glib-compile-schemas "$EXT_DST/schemas"
+chown -R "$TARGET_USER":"$TARGET_USER" "$EXT_DST"
 echo "installed extension -> $EXT_DST"
 
 # --- dbus policy ----------------------------------------------------------

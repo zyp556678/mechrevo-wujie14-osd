@@ -2,7 +2,7 @@
 
 在 MECHREVO WUJIE14 Pro 上为 Fn 热键显示屏幕提示（OSD），替代厂商的 Windows 工具 `T140_OSD_V06`。
 
-按 Fn+F1 / Fn+F4 / Fn+F7 时，屏幕中央偏上弹出对应图标，1.5 秒后淡出——与 Windows 版行为一致。
+按 Fn+F1 / Fn+F4 / Fn+F7 / Fn+Esc 时弹出对应图标，1.5 秒后淡出。位置和大小可在设置界面里实时调整。
 
 ## 覆盖范围
 
@@ -46,13 +46,45 @@ root 守护进程 mifs-osdd (Python)
 
 用 GNOME Shell 扩展而非独立窗口，是因为 Mutter 不支持 `wlr-layer-shell`，且 GTK4 没有窗口定位 API，独立窗口无法可靠地居中置顶。
 
+## 设置
+
+打开设置界面：扩展应用 → MECHREVO WUJIE14 PRO OSD → 齿轮图标，或
+
+```bash
+gnome-extensions prefs mifs-osd@local
+```
+
+**Position 页**：一个按显示器宽高比绘制的屏幕缩略图，直接拖动白色方块即可设定位置。
+
+两种定位模式：
+
+| 模式 | 行为 |
+|---|---|
+| 屏幕比例 | 图标中心位于屏幕的 (X%, Y%)，可放在任意位置 |
+| 距底边边距 | 水平居中，距屏幕底边固定像素，适合贴在底栏上方 |
+
+**Icon 页**：调整图标大小、选择预览用图标，以及「Show」按钮——点一下会在真实屏幕上弹一次，方便判断实际观感和对比度。
+
+### 为什么用百分比
+
+位置存成屏幕宽高的小数（如 `x=0.5, y=0.77`），大小存成屏幕宽度的百分比（如 `0.13`）。这样换分辨率、接外接显示器时，图标的相对位置和观感都保持一致，不会跑偏。
+
+配置存在 GSettings（schema `org.gnome.shell.extensions.mifs-osd`），也可用命令行改：
+
+```bash
+SCHEMA=org.gnome.shell.extensions.mifs-osd
+DIR=~/.local/share/gnome-shell/extensions/mifs-osd@local/schemas
+gsettings --schemadir $DIR set $SCHEMA size-percent 0.10
+gsettings --schemadir $DIR set $SCHEMA position-mode margin
+```
+
 ## 安装
 
 ```bash
 pkexec ./install.sh
 ```
 
-脚本会：装守护进程到 `/usr/libexec/mifs-osd/`、装扩展到用户目录、装 D-Bus 策略、配置 `acpi_call` 开机自动加载、启用并启动 systemd 服务。
+脚本会：装守护进程到 `/usr/libexec/mifs-osd/`、装扩展（含 prefs 与 schema）到用户目录、装 D-Bus 策略、配置 `acpi_call` 开机自动加载、启用并启动 systemd 服务。
 
 安装后需要重新登录（或重启 GNOME Shell）让扩展生效。
 
@@ -65,7 +97,7 @@ pkexec ./uninstall.sh
 ## 依赖
 
 - `acpi-call-dkms`（Secure Boot 下需要完成 MOK 注册）
-- `python3-gi`、GTK4、GNOME Shell 50+
+- `python3-gi`、GTK4、libadwaita、GNOME Shell 50+
 - `gjs`
 
 ## 开发
@@ -85,15 +117,18 @@ pkexec python3 -u tools/polltest.py 60
 pkexec tools/e2e_root.sh 60
 ```
 
-重新生成图标（源图在 `extracted_osd_png/`）：
+重新生成图标（需要厂商的 Windows 二进制）：
 
 ```bash
+python3 tools/extract_icons.py OSD_V06/T140_OSD_V06/BLDFnHotkeyUtility.exe
 python3 scripts/scale_icons.py
 ```
 
 开发扩展时，把 `src/extension/mifs-osd@local/` 软链接到
 `~/.local/share/gnome-shell/extensions/`，改完用
 `gnome-extensions disable/enable mifs-osd@local` 热重载。
+
+> 注意：改 `extension.js` 或 `prefs.js` 后，`disable/enable` **不会**重新加载 ESM 模块（GNOME 50 会缓存），需要 `killall -3 gnome-shell` 才能真正生效。
 
 ## 目录
 
@@ -104,10 +139,13 @@ src/daemon/mifs_osd/     root 守护进程
   poller.py              轮询 + 防抖
   mapper.py              (功能,值) → 图标文件名
   dbus_service.py        org.mechrevo.Mifs
+  __main__.py            组装轮询线程 + GLib 主循环
 src/extension/mifs-osd@local/   GNOME Shell 扩展
   extension.js           订阅信号并绘制
+  prefs.js               设置界面（缩略图预览 + 实时调整）
+  schemas/               GSettings schema
   icons/                 600×600 图标（由脚本生成）
-tools/                   开发用 CLI 与测试脚本
+tools/                   开发用 CLI、图标提取、测试脚本
 ```
 
 ## 已知限制
@@ -115,3 +153,9 @@ tools/                   开发用 CLI 与测试脚本
 1. 快速连按 Fn+F1 时，中间状态可能不弹 OSD（轮询是采样）。
 2. 依赖 `acpi_call`；内核升级后 DKMS 会重编，Secure Boot 下可能需要重新 MOK 注册。
 3. GNOME Shell 大版本升级后，`metadata.json` 的 `shell-version` 可能需要更新。
+4. 仅适用于 MECHREVO WUJIE14 Pro —— 其他机型的 ACPI 路径和 MIFS 功能码可能不同。
+
+## 许可与致谢
+
+本项目的图标从厂商 Windows 二进制中提取，版权归原厂商所有，仅供在本机型上替代原工具使用。代码部分可自由参考。
+

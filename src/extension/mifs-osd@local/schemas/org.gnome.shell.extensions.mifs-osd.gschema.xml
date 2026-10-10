@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+
+  <schema id="org.gnome.shell.extensions.mifs-osd"
+          path="/org/gnome/shell/extensions/mifs-osd/">
+
+    <!-- How the icon is placed on the monitor.
+         percent: the icon's centre sits at (x-percent, y-percent) of the
+                  screen, so the layout scales with any resolution.
+         margin:  horizontally centred, with its bottom edge `bottom-margin`
+                  logical pixels above the bottom of the screen. Handy for
+                  parking it just above a dock. -->
+    <key name="position-mode" type="s">
+      <choices>
+        <choice value="percent"/>
+        <choice value="margin"/>
+      </choices>
+      <default>'percent'</default>
+      <summary>Position mode</summary>
+      <description>Whether to place the icon by screen fraction or by a
+        margin from the bottom edge.</description>
+    </key>
+
+    <key name="x-percent" type="d">
+      <default>0.5</default>
+      <range min="0.0" max="1.0"/>
+      <summary>Horizontal position</summary>
+      <description>Fraction of the screen width for the icon centre.</description>
+    </key>
+
+    <key name="y-percent" type="d">
+      <default>0.77</default>
+      <range min="0.0" max="1.0"/>
+      <summary>Vertical position</summary>
+      <description>Fraction of the screen height for the icon centre.</description>
+    </key>
+
+    <key name="bottom-margin" type="i">
+      <default>140</default>
+      <range min="0" max="2000"/>
+      <summary>Gap above the bottom edge</summary>
+      <description>Logical pixels between the icon's bottom edge and the
+        bottom of the screen, in margin mode.</description>
+    </key>
+
+    <!-- Icon size as a fraction of screen width, so the icon looks the same
+         relative to the display regardless of resolution or scaling. -->
+    <key name="size-percent" type="d">
+      <default>0.13</default>
+      <range min="0.03" max="0.40"/>
+      <summary>Icon size</summary>
+      <description>Icon width as a fraction of the screen width.</description>
+    </key>
+
+    <key name="preview-icon" type="s">
+      <default>'SystemPerfMode_1.png'</default>
+      <summary>Icon used for previews</summary>
+      <description>Which icon the settings preview draws.</description>
+    </key>
+
+    <!-- Bumped by the preferences window to ask the running extension to
+         show the OSD once. A counter rather than a boolean so repeated
+         previews always look like a change to GSettings watchers. -->
+    <key name="preview-trigger" type="i">
+      <default>0</default>
+      <summary>Preview request counter</summary>
+      <description>Incrementing this makes the extension show one preview.</description>
+    </key>
+
+  </schema>
+
+</schemalist>
