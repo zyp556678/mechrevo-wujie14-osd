@@ -80,18 +80,23 @@ gsettings --schemadir $DIR set $SCHEMA position-mode margin
 
 ## 安装
 
+从 [Releases](https://github.com/zyp556678/mechrevo-wujie14-osd/releases) 下载 zip 解压，或直接 clone 仓库，然后：
+
 ```bash
-pkexec ./install.sh
+pkexec ./install.sh      # 图形会话：走 polkit 弹认证框
+sudo ./install.sh        # 无图形会话或 pkexec 不可用时
 ```
 
 脚本会：装守护进程到 `/usr/libexec/mifs-osd/`、装扩展（含 prefs 与 schema）到用户目录、装 D-Bus 策略、配置 `acpi_call` 开机自动加载、启用并启动 systemd 服务。
 
 安装后需要重新登录（或重启 GNOME Shell）让扩展生效。
 
+> **关于提权方式**：脚本本身会检查 `id -u`，用哪种方式提权都行。`pkexec` 依赖 polkit，纯 SSH 或最小化安装的机器上可能不存在或不可用，那种情况用 `sudo`。
+
 ## 卸载
 
 ```bash
-pkexec ./uninstall.sh
+pkexec ./uninstall.sh    # 或 sudo ./uninstall.sh
 ```
 
 ## 依赖
@@ -102,20 +107,25 @@ pkexec ./uninstall.sh
 
 ## 开发
 
+以下命令都需要 root（因为 `/proc/acpi/call` 仅 root 可读），用 `pkexec` 或 `sudo` 均可：
+
 ```bash
 # 查看所有功能当前值
-pkexec python3 tools/mifsctl.py list
+sudo python3 tools/mifsctl.py list
 
 # 读写单个功能
-pkexec python3 tools/mifsctl.py get SystemPerMode
-pkexec python3 tools/mifsctl.py set TPLock 1
+sudo python3 tools/mifsctl.py get SystemPerMode
+sudo python3 tools/mifsctl.py set TPLock 1
 
 # 只测轮询（打印变化，不涉及 D-Bus）
-pkexec python3 -u tools/polltest.py 60
+sudo python3 -u tools/polltest.py 60
 
 # 端到端（轮询 → D-Bus 信号 → 订阅者）
-pkexec tools/e2e_root.sh 60
+sudo tools/e2e_root.sh 60
 ```
+
+> 用 `pkexec` 时注意：它会重置工作目录到 `/root`，且不支持重定向、管道和 `&&`。
+> 所以 `pkexec` 的调用要用**绝对路径**，多步操作要写成脚本再整体执行。
 
 重新生成图标（需要厂商的 Windows 二进制）：
 
