@@ -1,0 +1,18 @@
+# Vendor Windows binaries — proprietary, and not needed to build or run the
+# Linux port. Keep them locally as reverse-engineering reference only.
+OSD_V06/
+OSD_V06.zip
+
+# The 2000px originals carved out of the vendor binary. The extension ships
+# the 600px versions under src/extension/.../icons/, which are committed.
+# Regenerate the originals with tools/extract_icons.py if you have the binary.
+extracted_osd_png/
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+
+# Editor / OS noise
+*.swp
+*~
+.DS_Store

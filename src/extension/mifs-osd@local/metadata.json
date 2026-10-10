@@ -1,0 +1,8 @@
+{
+  "uuid": "mifs-osd@local",
+  "name": "MECHREVO WUJIE14 PRO OSD",
+  "description": "Shows an on-screen display for MECHREVO WUJIE14 Pro Fn-key actions (power mode, touchpad lock, keyboard backlight) by listening to the MIFS daemon on the system bus.",
+  "shell-version": ["50"],
+  "settings-schema": null,
+  "url": ""
+}
