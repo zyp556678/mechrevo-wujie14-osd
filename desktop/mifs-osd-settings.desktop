@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=MIFS OSD 设置
+Name[en]=MIFS OSD Settings
+Comment=调整 MECHREVO WUJIE14 Pro Fn 热键 OSD 的位置与大小
+Comment[en]=Adjust where the MECHREVO WUJIE14 Pro Fn-key OSD appears
+Exec=/usr/bin/mifs-osd-settings
+Icon=preferences-desktop-display
+Terminal=false
+Categories=Settings;HardwareSettings;
+Keywords=osd;fn;mechrevo;wujie;hotkey;acpi;

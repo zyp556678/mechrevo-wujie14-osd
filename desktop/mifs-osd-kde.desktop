@@ -1,0 +1,16 @@
+[Desktop Entry]
+Type=Application
+Name=MIFS OSD
+Comment=Show an OSD for MECHREVO WUJIE14 Pro Fn-key actions
+Exec=/usr/bin/mifs-osd-kde
+Terminal=false
+NoDisplay=true
+
+# Runs on every desktop that can host a layer-shell surface, and stays out of
+# GNOME's way because GNOME has the Shell extension instead -- the two would
+# otherwise draw every Fn key press twice.
+NotShowIn=GNOME;
+
+# Start after the panel exists, so the OSD's first surface is not created
+# before the shell has finished arranging its own layers.
+X-KDE-autostart-after=panel
