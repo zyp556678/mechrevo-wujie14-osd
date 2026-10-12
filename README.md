@@ -143,7 +143,7 @@ trigger = 0               ; 设置界面靠自增这个值触发一次真实预�
 ### KDE Plasma（推荐 deb）
 
 ```bash
-sudo apt install ./mechrevo-wujie14-osd_1.1.0_all.deb
+sudo apt install ./mechrevo-wujie14-osd_*_all.deb
 ```
 
 自启动项装在 `/etc/xdg/autostart/`，**对所有用户生效**，装完注销重登即可。卸载：
@@ -159,7 +159,7 @@ sudo apt remove mechrevo-wujie14-osd
 从 [extensions.gnome.org](https://extensions.gnome.org) 搜索安装，或用上表的 zip：
 
 ```bash
-gnome-extensions install --force mifs-osd-gnome-extension-1.1.0.zip
+gnome-extensions install --force mifs-osd-gnome-extension-*.zip
 ```
 
 注意：扩展需要守护进程来读硬件状态。用 deb 装过的话（即使你只跑 GNOME）它已经在跑了；否则先用源码包跑一次 `install.sh`。
