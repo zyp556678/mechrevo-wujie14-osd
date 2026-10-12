@@ -85,9 +85,11 @@ sys.exit(main())
 EOF
 
 # Stable entry points, so the desktop files never need to know how the
-# backing packages happen to be laid out.
-ln -sf "$LIBEXEC/mifs-osd-kde" /usr/bin/mifs-osd-kde
-ln -sf "$LIBEXEC/mifs-osd-settings" /usr/bin/mifs-osd-settings
+# backing packages happen to be laid out. Relative targets, matching what the
+# .deb ships -- the two ways of installing should not produce two different
+# layouts to support.
+ln -sf ../libexec/mifs-osd/mifs-osd-kde /usr/bin/mifs-osd-kde
+ln -sf ../libexec/mifs-osd/mifs-osd-settings /usr/bin/mifs-osd-settings
 
 # Leftovers from a checkout only get in the way of the installed copy.
 find "$LIBEXEC" -name '__pycache__' -type d -exec rm -rf {} + 2>/dev/null || true
@@ -117,11 +119,20 @@ echo "installed GNOME extension -> $EXT_DST"
 
 # --- desktop entries ------------------------------------------------------
 install -m 0644 "$REPO/desktop/mifs-osd-settings.desktop" "$SETTINGS_DESKTOP"
-AUTOSTART_DIR="$TARGET_HOME/.config/autostart"
-install -d -m 0755 -o "$TARGET_USER" -g "$TARGET_USER" "$AUTOSTART_DIR"
-install -m 0644 -o "$TARGET_USER" -g "$TARGET_USER" \
-    "$REPO/desktop/mifs-osd-kde.desktop" "$AUTOSTART_DIR/"
-echo "installed settings entry + KDE autostart"
+
+# The .deb ships this same entry in /etc/xdg/autostart, where it covers every
+# user on the machine. Writing a second copy into one user's home would start
+# the renderer twice at login -- the single-instance lock turns that into a
+# harmless no-op, but it is still two processes racing to do nothing.
+if [ -f /etc/xdg/autostart/mifs-osd-kde.desktop ]; then
+    echo "autostart already provided system-wide (by the package); skipping"
+else
+    AUTOSTART_DIR="$TARGET_HOME/.config/autostart"
+    install -d -m 0755 -o "$TARGET_USER" -g "$TARGET_USER" "$AUTOSTART_DIR"
+    install -m 0644 -o "$TARGET_USER" -g "$TARGET_USER" \
+        "$REPO/desktop/mifs-osd-kde.desktop" "$AUTOSTART_DIR/"
+    echo "installed settings entry + KDE autostart"
+fi
 
 # --- dbus policy ----------------------------------------------------------
 install -m 0644 "$REPO/dbus/org.mechrevo.Mifs.conf" "$DBUS_CONF"

@@ -105,7 +105,7 @@ trigger = 0               ; 设置界面靠自增这个值触发一次真实预�
 
 **两种渲染方式**：默认 `layer-shell` 自绘，位置和大小由配置控制。切到 `plasma` 则调 plasmashell 自带的 OSD 服务——代价是位置、大小、超时全部由 plasmashell 决定，不可配置，只在自绘不生效时当退路用。
 
-**自启动**：登录时自动启动，开关在系统设置 → 开机与关机 → 自动启动。卸载或临时停用即可，不影响守护进程。
+**自启动**：登录时自动启动。用 deb 装的话入口在 `/etc/xdg/autostart/mifs-osd-kde.desktop`（对所有用户生效）；用源码包装的话在 `~/.config/autostart/`。开关都在系统设置 → 开机与关机 → 自动启动里，停用它不影响守护进程。
 
 ## 设置界面
 
@@ -130,7 +130,43 @@ trigger = 0               ; 设置界面靠自增这个值触发一次真实预�
 
 ## 安装
 
-从 [Releases](https://github.com/zyp556678/mechrevo-wujie14-osd/releases) 下载 zip 解压，或直接 clone 仓库，然后：
+三个发布包对应三条路，**互不重叠**——按你的桌面选一个即可：
+
+| 发布包 | 给谁 | 装法 |
+|---|---|---|
+| `mechrevo-wujie14-osd_<版本>_all.deb` | Debian / Ubuntu + **KDE Plasma** | `sudo apt install ./xxx.deb` |
+| `mifs-osd-gnome-extension-<版本>.zip` | **GNOME** | extensions.gnome.org，或 `gnome-extensions install` |
+| `mechrevo-wujie14-osd-<版本>.zip` | 手动安装（开发 / 其它发行版） | 解压后 `pkexec ./install.sh` |
+
+之所以不合成一个包：两个前端各有一整套自己的代码，塞在一起等于让每个用户都拖着一份自己跑不了的桌面的代码。而且 GNOME 扩展还要单独上传到 extensions.gnome.org，那样磁盘上会出现两份同样的 JS 却分不清在跑哪一份。
+
+### KDE Plasma（推荐 deb）
+
+```bash
+sudo apt install ./mechrevo-wujie14-osd_1.1.0_all.deb
+```
+
+自启动项装在 `/etc/xdg/autostart/`，**对所有用户生效**，装完注销重登即可。卸载：
+
+```bash
+sudo apt remove mechrevo-wujie14-osd
+```
+
+包里的 `acpi-call-dkms` 只是 `Recommends` 而非 `Depends`——Secure Boot 机器上它的内核模块要先做 MOK 注册再重启才能加载，把它设成硬依赖会让包直接装不上。
+
+### GNOME
+
+从 [extensions.gnome.org](https://extensions.gnome.org) 搜索安装，或用上表的 zip：
+
+```bash
+gnome-extensions install --force mifs-osd-gnome-extension-1.1.0.zip
+```
+
+注意：扩展需要守护进程来读硬件状态。用 deb 装过的话（即使你只跑 GNOME）它已经在跑了；否则先用源码包跑一次 `install.sh`。
+
+### 手动安装（源码包）
+
+解压后：
 
 ```bash
 pkexec ./install.sh      # 图形会话：走 polkit 弹认证框
@@ -139,7 +175,7 @@ sudo ./install.sh        # 无图形会话或 pkexec 不可用时
 
 脚本会：装守护进程到 `/usr/libexec/mifs-osd/`、装图标到 `/usr/share/mifs-osd/icons/`、装两个前端（GNOME 扩展 + KDE 程序）、装 D-Bus 策略、配置 `acpi_call` 开机自动加载、启用并启动 systemd 服务、写 KDE 自启动项。
 
-两个前端**总是都装**：GNOME 扩展只有 GNOME Shell 会加载，KDE 自启动项里写了 `NotShowIn=GNOME`，所以两者不会同时弹。换桌面不用重装，重新登录即可。
+两个前端**总是都装**：GNOME 扩展只有 GNOME Shell 会加载，KDE 自启动项里写了 `NotShowIn=GNOME`，所以两者不会同时弹。换桌面不用重装，重新登录即可。若系统级自启动已存在（比如装过 deb），脚本不会往用户家目录再写一份。
 
 安装后需要重新登录（GNOME 下还需重启 Shell）让前端生效。
 
@@ -147,9 +183,19 @@ sudo ./install.sh        # 无图形会话或 pkexec 不可用时
 
 ## 卸载
 
+用 deb 装的：
+
+```bash
+sudo apt remove mechrevo-wujie14-osd
+```
+
+用源码包装的：
+
 ```bash
 pkexec ./uninstall.sh    # 或 sudo ./uninstall.sh
 ```
+
+两者都会留下 `acpi-call-dkms`（别的用途也可能需要它），要清干净再 `apt remove acpi-call-dkms`。
 
 ## 依赖
 
