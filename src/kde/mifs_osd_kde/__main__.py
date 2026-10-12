@@ -6,7 +6,6 @@ hardware knowledge stays in the daemon, so a bug here can only cost a window,
 never a hung desktop.
 """
 import argparse
-import fcntl
 import logging
 import os
 import signal
@@ -14,7 +13,7 @@ import sys
 
 from PyQt6.QtCore import QFileSystemWatcher, QObject, QTimer, pyqtSlot
 
-from . import icons, renderer as renderers
+from . import icons, instance, renderer as renderers
 from .config import BACKENDS, CONFIG_PATH, Config
 
 log = logging.getLogger('mifs-osd')
@@ -79,28 +78,6 @@ class OsdReceiver(QObject):
         self._osd.apply(self._config)
         self._osd.show(icon, params.get('label') or '')
         log.info('%s -> %s', params.get('feature'), icon)
-
-
-def acquire_single_instance_lock():
-    """Stop a second renderer from starting.
-
-    Two of them would draw every key press twice, and the duplicate lands
-    exactly on top of the first -- so it reads as a rendering glitch rather
-    than as two processes. Easy to trigger by accident: the autostart entry
-    fires at login whether or not a copy is already running.
-
-    The lock lives in XDG_RUNTIME_DIR, which the session clears at logout:
-    the right lifetime for a per-session process. Returns a handle that must
-    stay referenced, since closing it releases the lock.
-    """
-    runtime = os.environ.get('XDG_RUNTIME_DIR') or '/tmp'
-    path = os.path.join(runtime, 'mifs-osd-kde.%d.lock' % os.getuid())
-    try:
-        handle = open(path, 'w')
-        fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
-    except OSError:
-        return None
-    return handle
 
 
 def parse_args(argv):
@@ -177,7 +154,7 @@ def main(argv=None):
     tick.timeout.connect(lambda: None)
     tick.start(200)
 
-    lock = acquire_single_instance_lock()
+    lock = instance.acquire()
     if lock is None:
         log.info('another renderer is already running; exiting')
         return 0

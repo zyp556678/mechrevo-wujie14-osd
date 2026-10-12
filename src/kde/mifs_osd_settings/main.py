@@ -12,15 +12,17 @@ screen, and the button draws the real OSD so size and contrast can be judged
 against whatever is actually behind it.
 """
 import copy
+import shutil
 import sys
+from pathlib import Path
 
-from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtCore import QProcess, Qt, QTimer, pyqtSignal
 from PyQt6.QtGui import QColor, QGuiApplication, QIcon, QPainter, QPen
 from PyQt6.QtWidgets import (
     QApplication, QComboBox, QFormLayout, QGroupBox, QHBoxLayout, QLabel,
-    QPushButton, QSlider, QSpinBox, QVBoxLayout, QWidget)
+    QMessageBox, QPushButton, QSlider, QSpinBox, QVBoxLayout, QWidget)
 
-from mifs_osd_kde import geometry, icons
+from mifs_osd_kde import geometry, icons, instance
 from mifs_osd_kde.config import MAX_SIZE_PERCENT, MIN_SIZE_PERCENT, Config
 
 # (file, label) for the picker. Only the icons a user can actually trigger are
@@ -45,6 +47,26 @@ BACKEND_LABELS = [
 ]
 
 THUMB_WIDTH = 320
+
+# How often the renderer's status is re-checked. Cheap enough to poll: it is
+# one open, one flock and one close.
+STATUS_POLL_MS = 2000
+
+
+def launch_command():
+    """How to start a renderer, preferring the installed entry point.
+
+    Falls back to this interpreter with the package path injected, so a
+    checkout works too -- the renderer package sits next to this one.
+    """
+    installed = shutil.which('mifs-osd-kde')
+    if installed:
+        return installed, []
+    parent = str(Path(__file__).resolve().parents[1])
+    code = ('import sys; sys.path.insert(0, %r); '
+            'from mifs_osd_kde.__main__ import main; sys.exit(main())'
+            % parent)
+    return sys.executable, ['-c', code]
 
 
 class ScreenThumb(QWidget):
@@ -130,6 +152,11 @@ class SettingsWindow(QWidget):
         layout.addWidget(self._build_backend_group())
 
         self._sync_mode()
+
+        self._status_timer = QTimer(self)
+        self._status_timer.timeout.connect(self._refresh_status)
+        self._status_timer.start(STATUS_POLL_MS)
+        self._refresh_status()
 
     # -- position ----------------------------------------------------------
 
@@ -240,15 +267,55 @@ class SettingsWindow(QWidget):
         show = QPushButton('在屏幕上显示')
         show.clicked.connect(self._show_on_screen)
         row.addWidget(show)
-        row.addWidget(QLabel('需要渲染器正在运行'))
+
+        self._status = QLabel()
+        row.addWidget(self._status)
+
+        self._start_button = QPushButton('启动渲染器')
+        self._start_button.clicked.connect(self._start_renderer)
+        row.addWidget(self._start_button)
         form.addRow('预览', row)
         return group
+
+    def _refresh_status(self):
+        """Say whether anything is listening, instead of leaving it implied.
+
+        A preview request is just a counter in the settings file. With no
+        renderer watching it the click does exactly what a working one does
+        up to the point of drawing -- which, from the outside, is nothing at
+        all. Saying so is the difference between a broken button and a
+        switched-off program.
+        """
+        running = instance.is_running()
+        self._status.setText('渲染器运行中' if running else '渲染器未运行')
+        self._status.setStyleSheet(
+            'color: palette(mid);' if running else 'color: #c0392b;')
+        self._start_button.setVisible(not running)
+
+    def _start_renderer(self):
+        program, arguments = launch_command()
+        started, _pid = QProcess.startDetached(program, arguments)
+        if not started:
+            QMessageBox.warning(
+                self, '启动失败',
+                '没能启动渲染器。\n\n请在终端手动运行：mifs-osd-kde')
+            return
+        # Give it time to load the QML and take the lock before reporting.
+        QTimer.singleShot(1500, self._refresh_status)
 
     def _on_size_changed(self, value):
         self._size_readout.setText('%d %%' % value)
         self._set('size_percent', value / 100.0)
 
     def _show_on_screen(self):
+        if not instance.is_running():
+            answer = QMessageBox.question(
+                self, '渲染器未运行',
+                '没有渲染器在监听，预览不会出现在屏幕上。\n\n'
+                '现在启动它吗？')
+            if answer == QMessageBox.StandardButton.Yes:
+                self._start_renderer()
+            return
         # The renderer watches this counter; bumping it draws one OSD. Same
         # mechanism as the GNOME frontend's preview-trigger key.
         self._config.preview_trigger += 1
