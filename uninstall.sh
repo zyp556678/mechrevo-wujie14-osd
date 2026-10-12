@@ -20,12 +20,21 @@ rm -f /etc/systemd/system/mifs-osdd.service
 systemctl daemon-reload
 
 rm -rf /usr/libexec/mifs-osd
+rm -rf /usr/share/mifs-osd
+rm -f /usr/bin/mifs-osd-kde /usr/bin/mifs-osd-settings
+rm -f /usr/share/applications/mifs-osd-settings.desktop
 rm -f /usr/share/dbus-1/system.d/org.mechrevo.Mifs.conf
 systemctl reload dbus.service 2>/dev/null || systemctl restart dbus.service
 rm -f /etc/modules-load.d/mifs-osd.conf
 
 if [ -n "$TARGET_HOME" ]; then
     rm -rf "$TARGET_HOME/.local/share/gnome-shell/extensions/mifs-osd@local"
+    rm -f "$TARGET_HOME/.config/autostart/mifs-osd-kde.desktop"
+    # Settings belong to the user, so they go too -- but the icons override
+    # directory is only removed if this owner put anything there.
+    rm -rf "$TARGET_HOME/.config/mifs-osd"
+    rmdir "$TARGET_HOME/.local/share/mifs-osd/icons" \
+          "$TARGET_HOME/.local/share/mifs-osd" 2>/dev/null || true
 fi
 
 echo "Removed. acpi_call itself was left installed; remove it with:"
